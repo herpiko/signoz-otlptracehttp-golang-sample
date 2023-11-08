@@ -4,19 +4,19 @@ import (
 	"context"
 	"log"
 	"os"
-	"strings"
+
+	//"strings"
 
 	"github.com/SigNoz/sample-golang-app/controllers"
 	"github.com/SigNoz/sample-golang-app/metrics"
 	"github.com/SigNoz/sample-golang-app/models"
-	"google.golang.org/grpc/credentials"
 
 	"github.com/gin-gonic/gin"
 	"go.opentelemetry.io/contrib/instrumentation/github.com/gin-gonic/gin/otelgin"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
-	"go.opentelemetry.io/otel/exporters/otlp/otlptrace"
-	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc"
+
+	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp"
 
 	"go.opentelemetry.io/otel/sdk/resource"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
@@ -30,22 +30,16 @@ var (
 
 func initTracer() func(context.Context) error {
 
-	var secureOption otlptracegrpc.Option
+	var secureOption otlptracehttp.Option
+	secureOption = otlptracehttp.WithInsecure()
 
-	if strings.ToLower(insecure) == "false" || insecure == "0" || strings.ToLower(insecure) == "f" {
-		secureOption = otlptracegrpc.WithTLSCredentials(credentials.NewClientTLSFromCert(nil, ""))
-	} else {
-		secureOption = otlptracegrpc.WithInsecure()
-	}
-
-	exporter, err := otlptrace.New(
+	exporter, err := otlptracehttp.New(
 		context.Background(),
-		otlptracegrpc.NewClient(
-			secureOption,
-			otlptracegrpc.WithEndpoint(collectorURL),
+		secureOption,
+		otlptracehttp.Option(
+			otlptracehttp.WithEndpoint(collectorURL),
 		),
 	)
-
 	if err != nil {
 		log.Fatalf("Failed to create exporter: %v", err)
 	}
